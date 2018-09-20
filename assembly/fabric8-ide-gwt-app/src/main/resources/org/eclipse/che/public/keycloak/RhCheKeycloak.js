@@ -447,7 +447,7 @@ function initAnalytics(writeKey){
             setStatusMessage("");
 
             const segmentWriteKeyUrl = '/api/fabric8-che-analytics/segment-write-key';
-            get(segmentWriteKeyUrl, keycloak.token)
+            get(segmentWriteKeyUrl)
             .then(function (request) {
                 var segmentKey = request.responseText;
                 if (segmentKey!= '') {
