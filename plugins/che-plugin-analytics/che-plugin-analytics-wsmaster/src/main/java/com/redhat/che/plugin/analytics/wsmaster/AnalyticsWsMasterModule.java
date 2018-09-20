@@ -31,7 +31,7 @@ public class AnalyticsWsMasterModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bind(AnalyticsSettingsService.class);
+    bind(AnalyticsService.class);
     bind(AttributesCompleter.class);
 
     final FactoryUrlSetterInterceptor factoryUrlSetterInterceptor =

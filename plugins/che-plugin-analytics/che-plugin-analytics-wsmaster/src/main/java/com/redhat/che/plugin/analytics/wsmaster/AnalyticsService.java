@@ -13,19 +13,26 @@ package com.redhat.che.plugin.analytics.wsmaster;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+
 import org.eclipse.che.api.core.rest.Service;
 import org.eclipse.che.commons.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path("fabric8-che-analytics")
-public class AnalyticsSettingsService extends Service {
+public class AnalyticsService extends Service {
+  private static final Logger LOG = LoggerFactory.getLogger(AnalyticsService.class);
 
   String segmentWriteKey;
   String woopraDomain;
 
   @Inject
-  public AnalyticsSettingsService(
+  public AnalyticsService(
       @Nullable @Named("che.fabric8.analytics.segment_write_key") String segmentWriteKey,
       @Nullable @Named("che.fabric8.analytics.woopra_domain") String woopraDomain) {
     this.segmentWriteKey = segmentWriteKey;
@@ -42,5 +49,32 @@ public class AnalyticsSettingsService extends Service {
   @Path("woopra-domain")
   public String woopraDomain() {
     return woopraDomain == null ? "" : woopraDomain;
+  }
+  
+  private String getLog(String message, HttpServletRequest request) {
+      StringBuffer log = new StringBuffer("[E2E Registration Flow");
+      String ip = request.getHeader("X-Forwarded-For");
+      if (ip == null) {
+        ip = request.getRemoteAddr();
+      }
+      if (ip != null) {
+          log.append("- IP = " + ip);
+      }
+      log.append("] ").append(message);
+      return log.toString();
+  }
+  
+  @POST
+  @Path("warning")
+  @Consumes("text/plain")
+  public void warning(String message, HttpServletRequest request) {
+      LOG.warn(getLog(message, request));
+  }
+
+  @POST
+  @Path("error")
+  @Consumes("text/plain")
+  public void error(String message, HttpServletRequest request) {
+      LOG.error(getLog(message, request));
   }
 }
