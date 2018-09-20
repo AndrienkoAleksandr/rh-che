@@ -331,7 +331,7 @@ function initAnalytics(writeKey){
                 }
             })
             .catch(function(request) {
-                return Promise.reject("Error when getting user informations: " + request.responseText);
+                return Promise.reject("Error when getting user informations: status code: " + request.status + " - body: " + request.responseText);
             });
         } else {
             post('/api/fabric8-che-analytics/warning', "Following user accessed the Dashboard without being authenticated inside Telemetry: " + keycloak.tokenParsed.sub);
