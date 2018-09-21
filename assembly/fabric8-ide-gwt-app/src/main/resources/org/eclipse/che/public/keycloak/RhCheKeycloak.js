@@ -319,10 +319,8 @@ function initAnalytics(writeKey){
                         if (localStorage['openshiftio.adobeMarketingCloudVisitorId']) {
                             traits.adobeMarketingCloudVisitorId = localStorage['openshiftio.adobeMarketingCloudVisitorId'];
                         }
-                        analytics.identify(user.id, traits).push((param) => {
-                            console.log("Parameter of the Segment push callback", param);
-                            return request;
-                        });
+                        analytics.identify(user.id, traits);
+                        return true;
                     } else {
                         return Promise.reject(request);
                     }
@@ -334,8 +332,16 @@ function initAnalytics(writeKey){
                 return Promise.reject("Error when getting user informations: status code: " + request.status + " - body: " + request.responseText);
             });
         } else {
-            post('/api/fabric8-che-analytics/warning', "Following user accessed the Dashboard without being authenticated inside Telemetry: " + keycloak.tokenParsed.sub);
-            return request;
+            post('/api/fabric8-che-analytics/warning', "Following user accessed the Dashboard without being fully identified inside Telemetry: " + keycloak.tokenParsed.sub);
+            return true;
+        }
+    }
+
+    function identifyUserWithId(keycloak) {
+        if(window.analytics) {
+            analytics.identify(keycloak.tokenParsed.sub);
+        } else {
+            post('/api/fabric8-che-analytics/warning', "Following user accessed the Dashboard without being identified by ID inside Telemetry: " + keycloak.tokenParsed.sub);
         }
     }
     
@@ -457,6 +463,7 @@ function initAnalytics(writeKey){
                 var promise = originalInit(initOptions);
                 promise.success(function(arg) {
                     var keycloak = kc;
+                    identifyUserWithId(keycloak.tokenParsed.sub);
                     var lastProvisioningDate = sessionStorage.getItem('osio-provisioning');
                     var lastProvisioningTimeoutFailure = sessionStorage.getItem('osio-provisioning-timeout-failure');
                     sessionStorage.removeItem('osio-provisioning');
@@ -465,24 +472,24 @@ function initAnalytics(writeKey){
                         var w = window.open('', 'osio_provisioning');
                         w && w.close();
                     }
-                    identifyUser(keycloak)
-                    .then(function() {
-                        if (lastProvisioningDate || lastProvisioningTimeoutFailure) {
-                            track(telemetry_event_provision_user_for_che);
-                        }
-                        return performAccounkLinking(keycloak);
-                    })
+                    if (lastProvisioningDate || lastProvisioningTimeoutFailure) {
+                        track(telemetry_event_provision_user_for_che);
+                    }
+                    performAccounkLinking(keycloak)
                     .then(()=>{
                         return setUpNamespaces(keycloak);
                     })
                     .then(() => {
-                        if (isInCheDashboard) {
-                            track(telemetry_event_enter_che_dashboard);
-                        } else {
-                            console.log("Entering something else as the dashboard !!!");
-                        }
-                        setStatusMessage(osio_msg_started);
-                        finalPromise.setSuccess(arg);
+                        identifyUser(keycloak)
+                        .then(function() {
+                            if (isInCheDashboard) {
+                                track(telemetry_event_enter_che_dashboard);
+                            } else {
+                                console.log("Entering something else as the dashboard !!!");
+                            }
+                            setStatusMessage(osio_msg_started);
+                            finalPromise.setSuccess(arg);
+                        })
                     })
                     .catch((errorMessage) => {
                         post('/api/fabric8-che-analytics/error', errorMessage);
