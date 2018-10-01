@@ -250,6 +250,8 @@ objects:
                   name: rhche
           - name: CHE_WORKSPACE_SIDECAR_DEFAULT__MEMORY__LIMIT__MB
             value: "256"
+          - name: CHE_INFRA_KUBERNETES_SERVICE__ACCOUNT__NAME
+            value: "che-workspace"
           - name: CHE_OPENSHIFT_SERVICE__ACCOUNT_SECRET
             valueFrom:
               secretKeyRef:
